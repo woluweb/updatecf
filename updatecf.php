@@ -167,7 +167,7 @@ class PlgSystemupdatecf extends JPlugin
             fputs($f, $interval);
             fclose($f);
 			
-			// there is an Option allowing to have a Log everytime the Plugin is triggered
+            // there is an Option allowing to have a Log everytime the Plugin is triggered
             if ('1' == $this->params->get('log')) {
                 JLog::addLogger(['text_file' => 'updatecf.trace.log'], JLog::INFO);
             }
@@ -196,11 +196,11 @@ class PlgSystemupdatecf extends JPlugin
         $model = BaseDatabaseModel::getInstance('Field', 'FieldsModel', ['ignore_request' => true]);
 
         foreach ($fields as $field) {
-			// we mention here all the Custom Fields which should be ignored by the plugin
+            // we mention here all the Custom Fields which should be ignored by the plugin
             if (('id-external-source' == $field->name) || ('cf-update' == $field->name)) {
                 continue;
             }
-			// then, for every Custom Field where we want to fill in the value we simply specify the value in the json provided by the external source
+            // then, for every Custom Field where we want to fill in the value we simply specify the value in the json provided by the external source
             switch ($field->name) {
                 case 'labelfr':
                     $value= $jsonArray['legalStatus']['labelFr'];
@@ -260,7 +260,7 @@ class PlgSystemupdatecf extends JPlugin
                     break;
                 
 				// Default value in case some Custom Field would not be found (also for example because its Name is misspelled in the backend)
-				default:
+                default:
                     $value = 'That Custom Field ' . $field->title . ' was not found';
             }
 
