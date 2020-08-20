@@ -1,15 +1,15 @@
 <?php
 
 /**
- * Woluweb - Update Custom Field project
- * A plugin allowing to populate Joomla Custom Fields from Webservices
- * php version 7.2
+ * Woluweb - Update Custom Field values Project
+ * A plugin allowing to populate Joomla Custom Fields from External Websites via Webservices
  *
  * @package   Updatecf
  * @author    Pascal Leconte <pascal.leconte@conseilgouz.com>
+ * @author    Christophe Avonture <christophe@avonture.be>
  * @author    Marc Dechèvre <marc@woluweb.be>
- * @copyright 2020-2020 (c) ConseilGouz
- * @license   Proprietary
+ * @copyright 2020-2020 (c)
+ * @license   GNU GPL
  *
  * @link https://github.com/woluweb/updatecf
  * @wiki https://github.com/woluweb/updatecf/-/wikis/home
@@ -32,8 +32,9 @@ $input  = Factory::getApplication()->input;
 $pJform = $input->get('jform', '', 'array');
 
 /*
- * Modification of the parameters:
- *  we launch the creation of the file "trigger".
+ * The present plugin will trigger automatically at the frequency configured in the Plugin Options
+ * To do so it creates a file with the timestamp of the last execution
+ * Note : the manual way to trigger the Plugin is simply to (Open and) Save it
  */
 if (isset($pJform['params']['freq'])) {
     $folder  = JPATH_SITE . '/plugins/system/updatecf';
@@ -89,7 +90,7 @@ if (isset($pJform['params']['freq'])) {
 }
 
 /**
- * The Update Custom Fields system plugins.
+ * The Update Custom Fields system plugin
  *
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
@@ -165,13 +166,15 @@ class PlgSystemupdatecf extends JPlugin
             $f=fopen($fname, 'w');
             fputs($f, $interval);
             fclose($f);
+			
+			// there is an Option allowing to have a Log everytime the Plugin is triggered
             if ('1' == $this->params->get('log')) {
                 JLog::addLogger(['text_file' => 'updatecf.trace.log'], JLog::INFO);
             }
 
             $this->goUpdate();
             if ('1' == $this->params->get('log')) {
-                JLog::add('OK', JLog::INFO, 'MAJ CF');
+                JLog::add('OK', JLog::INFO, 'Custom Fields updated');
             }
         }
 
@@ -179,7 +182,7 @@ class PlgSystemupdatecf extends JPlugin
     }
 
     /**
-     * Update of the fields in relation to the custom fields.
+     * Update of the Custom Fields values based on the external source (webservices)
      *
      * @param int   $articleId The ID of the article
      * @param array $fields    The list of custom fields
@@ -193,10 +196,11 @@ class PlgSystemupdatecf extends JPlugin
         $model = BaseDatabaseModel::getInstance('Field', 'FieldsModel', ['ignore_request' => true]);
 
         foreach ($fields as $field) {
-            if (('cf' == $field->name) || ('cf-update' == $field->name)) {
+			// we mention here all the Custom Fields which should be ignored by the plugin
+            if (('id-external-source' == $field->name) || ('cf-update' == $field->name)) {
                 continue;
             }
-
+			// then, for every Custom Field where we want to fill in the value we simply specify the value in the json provided by the external source
             switch ($field->name) {
                 case 'labelfr':
                     $value= $jsonArray['legalStatus']['labelFr'];
@@ -254,8 +258,10 @@ class PlgSystemupdatecf extends JPlugin
                     $value= $this->getRepeat($jsonArray['emailNl'], 'emailnl', 'email');
 
                     break;
-                default:
-                    $value = 'That Custom Field ' . $field->title . ' didn\'t exists in your JSON input';
+                
+				// Default value in case some Custom Field would not be found (also for example because its Name is misspelled in the backend)
+				default:
+                    $value = 'That Custom Field ' . $field->title . ' was not found';
             }
 
             $model->setFieldValue($field->id, $articleId, $value);
@@ -371,7 +377,7 @@ class PlgSystemupdatecf extends JPlugin
     }
 
     /**
-     * Link between fields and fields in the CF file.
+     * For each Article, decides whether to trigger or not the update of the Custom Field values
      *
      * @param stdClass $article Joomla article
      *
@@ -384,7 +390,7 @@ class PlgSystemupdatecf extends JPlugin
         $item       = [];
         $item['id'] = $article->id;
         $fields     = FieldsHelper::getFields('com_content.article', $item);
-        $cf         = '';
+        $idExternalSource         = '';
 
         $update     = false;
 
@@ -393,14 +399,14 @@ class PlgSystemupdatecf extends JPlugin
                 $update = true;
             }
 
-            if ('cf' == $field->name) {
-                $cf = $field->value;
+            if ('id-external-source' == $field->name) {
+                $idExternalSource = $field->value;
             }
         }
 
-        // At least one blank area, we fill in
-        if ($update && ('' != $cf)) {
-            $this->url = self::DOMAIN . urlencode($cf);
+        // We update a Article only if its Custom Field is set on Yes and if the ID of the External Source is filled in
+        if ($update && ('' != $idExternalSource)) {
+            $this->url = self::DOMAIN . urlencode($idExternalSource);
             if (extension_loaded('curl')) {
                 $getContentCode = $this->getCurlContent($this->url);
                 if ((self::HTTP_OK != $getContentCode) and (self::HTTP_FOUND != $getContentCode)) {
@@ -411,7 +417,7 @@ class PlgSystemupdatecf extends JPlugin
             if (self::HTTP_OK == $getContentCode) {
                 $this->updateCustomFields($article->id, $fields);
             } else {
-                $msg = 'Error Custom field ' . $cf . ' not found';
+                $msg = 'Error Custom field ' . $idExternalSource . ' not found';
                 if ('1' == $this->params->get('log')) {
                     JLog::add($msg, JLog::INFO, 'MAJ CF');
                 }
@@ -424,7 +430,7 @@ class PlgSystemupdatecf extends JPlugin
     }
 
     /**
-     * Retrieving information from a custom field.
+     * Retrieving information
      *
      * @param string $url URL
      *
