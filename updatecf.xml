@@ -16,6 +16,8 @@
 	<languages>
 		<language tag="fr-FR">fr-FR.plg_system_updatecf.ini</language>
 		<language tag="fr-FR">fr-FR.plg_system_updatecf.sys.ini</language>
+		<language tag="en-GB">en-GB.plg_system_updatecf.ini</language>
+		<language tag="en-GB">en-GB.plg_system_updatecf.sys.ini</language>
 	</languages>
 	<config>
        <fields name="params" >
