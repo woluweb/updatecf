@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension version="3.9" type="plugin" group="system" method="upgrade">
+	<name>PLG_SYSTEM_UPDATE_CF</name>
+	<author>ConseilGouz</author>
+	<creationDate>2020 June</creationDate>
+	<copyright>(C)2020 ConseilGouz. All rights reserved.</copyright>
+	<license>GNU General Public License version 2 or later; see LICENSE.txt</license>
+	<authorEmail>pascal.leconte@conseilgouz.com</authorEmail>
+	<authorUrl>www.conseilgouz.com</authorUrl>
+	<version>1.0.0</version>
+	<description>PLG_SYSTEM_UPDATE_CF_XML_DESCRIPTION</description>
+	<files>
+		<filename plugin="updatecf">updatecf.php</filename>
+        <filename>updatecf.xml</filename>
+	</files>
+	<languages>
+		<language tag="fr-FR">fr-FR.plg_system_updatecf.ini</language>
+		<language tag="fr-FR">fr-FR.plg_system_updatecf.sys.ini</language>
+	</languages>
+	<config>
+       <fields name="params" >
+			<fieldset name="basic">
+				<field name="xdays" type="text" 
+					default="1" 
+					size="5" 
+					label="Checks every x days"
+					description="Periodicity in days"
+				/>
+				<field name="time" type="text" 
+					default="00:00" 
+					size="5" 
+					label="Execution time"  
+					description="Execution time"
+				/>
+				<field name="freq" type="hidden" 
+					default="1" 
+					size="5" 
+					label="Check x times a day"
+					description="Number of checks per day"
+				/>
+				<field 
+				name="categories" type="category"	multiple="true"	extension="com_content" 
+				label="Category(ies)" description="Select the category or categories you want to check or update." 
+				/>
+				<field name="log" type="radio"
+				default="0"
+				label="Action log"
+				description="Do you want to keep track of the plugin? If so, an updatecf.trace.log file will be created in the logs directory." 
+				class="btn-group btn-group-yesno">
+					<option value="1">JYES</option>
+					<option value="0">JNO</option>
+				</field>
+			</fieldset>
+      </fields>
+	</config>
+</extension>
