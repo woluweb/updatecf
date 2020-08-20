@@ -1,14 +1,14 @@
 <?php
 
 /**
- * Woluweb - Update Custom Field values Project
- * A plugin allowing to populate Joomla Custom Fields from External Websites via Webservices
+ * Woluweb - Update Custom Field project
+ * A plugin allowing to populate Joomla Custom Fields from Webservices
+ * php version 7.2
  *
  * @package   Updatecf
  * @author    Pascal Leconte <pascal.leconte@conseilgouz.com>
  * @author    Christophe Avonture <christophe@avonture.be>
  * @author    Marc Dechèvre <marc@woluweb.be>
- * @copyright 2020-2020 (c)
  * @license   GNU GPL
  *
  * @link https://github.com/woluweb/updatecf
@@ -57,17 +57,13 @@ if (isset($pJform['params']['freq'])) {
     $round     =strtotime(date('Y-m-d', $time));
     $backuptime=$round + $dayssecs;
     $xdays     =(int)$pJform['params']['xdays'];
-    if (0 == $xdays) {
+    if ($xdays < 0) {
         $xdays=1;
     }
 
     if (1 == $xdays) {
         $interval=(int)$pJform['params']['freq'];
-        if (0 == $interval) {
-            $interval=86400;
-        } else {
-            $interval=(int)(86400 / $interval);
-        }
+        $interval= (0 == $interval) ? 86400 : (86400 / $interval);
 
         while ($backuptime < $time) {
             $backuptime += $interval;
@@ -90,7 +86,7 @@ if (isset($pJform['params']['freq'])) {
 }
 
 /**
- * The Update Custom Fields system plugin
+ * The Update Custom Fields system plugin.
  *
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
@@ -120,6 +116,13 @@ class PlgSystemupdatecf extends JPlugin
     private const HTTP_FOUND = 302;
 
     /**
+     * Used to detect if the Joomla major version is 4 or more.
+     *
+     * @var int
+     */
+    private const JOOMLA_4 = 4;
+
+    /**
      * HTTP response.
      *
      * @var string
@@ -135,15 +138,18 @@ class PlgSystemupdatecf extends JPlugin
     {
         $folder  = JPATH_SITE . '/plugins/system/updatecf';
         $chkfile = 'majcf_checkfile';
-        $create  =false;
-        $fnames  =JFolder::files($folder, $chkfile . '.*');
-        $fname   =array_pop($fnames);
-        if (!$fname) {
+        $fnames  =(array) JFolder::files($folder, $chkfile . '.*');
+
+        if ([] === $fnames) {
             return;
         }
 
+        $fname     =(string) array_pop($fnames);
         $backuptime=substr($fname, -10, 10);
         $interval  =file_get_contents($folder . '/' . $fname);
+
+        $create  =false;
+
         if ('w' == $interval[0]) {
             $interval=(int)substr($interval, 1);
             $create  =true;
@@ -166,23 +172,21 @@ class PlgSystemupdatecf extends JPlugin
             $f=fopen($fname, 'w');
             fputs($f, $interval);
             fclose($f);
-			
+
             // there is an Option allowing to have a Log everytime the Plugin is triggered
-            if ('1' == $this->params->get('log')) {
+            if (1 === (int) $this->params->get('log')) {
                 JLog::addLogger(['text_file' => 'updatecf.trace.log'], JLog::INFO);
             }
 
             $this->goUpdate();
-            if ('1' == $this->params->get('log')) {
+            if (1 === (int) $this->params->get('log')) {
                 JLog::add('OK', JLog::INFO, 'Custom Fields updated');
             }
         }
-
-        return true;
     }
 
     /**
-     * Update of the Custom Fields values based on the external source (webservices)
+     * Update of the Custom Fields values based on the external source (webservices).
      *
      * @param int   $articleId The ID of the article
      * @param array $fields    The list of custom fields
@@ -200,67 +204,69 @@ class PlgSystemupdatecf extends JPlugin
             if (('id-external-source' == $field->name) || ('cf-update' == $field->name)) {
                 continue;
             }
-            // then, for every Custom Field where we want to fill in the value we simply specify the value in the json provided by the external source
+
+            // then, for every Custom Field where we want to fill in the value we
+            // simply specify the value in the json provided by the external source
             switch ($field->name) {
                 case 'labelfr':
-                    $value= $jsonArray['legalStatus']['labelFr'];
+                    $value= $jsonArray['legalStatus']['labelFr'] ?? '';
 
                     break;
                 case 'labelnl':
-                    $value= $jsonArray['legalStatus']['labelNl'];
+                    $value= $jsonArray['legalStatus']['labelNl'] ?? '';
 
                     break;
                 case 'nameofficialfr':
-                    $value= $jsonArray['nameOfficialFr'];
+                    $value= $jsonArray['nameOfficialFr'] ?? '';
 
                     break;
                 case 'nameofficialnl':
-                    $value= $jsonArray['nameOfficialNl'];
+                    $value= $jsonArray['nameOfficialNl'] ?? '';
 
                     break;
                 case 'descriptionfr':
-                    $value= $jsonArray['descriptionFr'];
+                    $value= $jsonArray['descriptionFr'] ?? '';
 
                     break;
                 case 'descriptionnl':
-                    $value= $jsonArray['descriptionNl'];
+                    $value= $jsonArray['descriptionNl'] ?? '';
 
                     break;
                 case 'permanencyfr':
-                    $value= $jsonArray['permanencyFr'];
+                    $value= $jsonArray['permanencyFr'] ?? '';
 
                     break;
                 case 'permanencynl':
-                    $value= $jsonArray['permanencyNl'];
+                    $value= $jsonArray['permanencyNl'] ?? '';
 
                     break;
                 case 'legalfr':
-                    $value=  $jsonArray['legalStatus']['labelFr'];
+                    $value=  $jsonArray['legalStatus']['labelFr'] ?? '';
 
                     break;
                 case 'legalnl':
-                    $value=  $jsonArray['legalStatus']['labelNl'];
+                    $value=  $jsonArray['legalStatus']['labelNl'] ?? '';
 
                     break;
                 case 'streetfr':
-                    $value=  $jsonArray['address']['streetFr'];
+                    $value=  $jsonArray['address']['streetFr'] ?? '';
 
                     break;
                 case 'streetnl':
-                    $value=  $jsonArray['address']['streetNl'];
+                    $value=  $jsonArray['address']['streetNl'] ?? '';
 
                     break;
                 case 'emailfr':
-                    $value= $this->getRepeat($jsonArray['emailFr'], 'emailfr', 'email');
+                    $value= $this->getRepeat($jsonArray['emailFr'] ?? '', 'emailfr', 'email');
 
                     break;
                 case 'emailnl':
-                    $value= $this->getRepeat($jsonArray['emailNl'], 'emailnl', 'email');
+                    $value= $this->getRepeat($jsonArray['emailNl'] ?? '', 'emailnl', 'email');
 
                     break;
-                
-				// Default value in case some Custom Field would not be found (also for example because its Name is misspelled in the backend)
                 default:
+                    // Default value in case some Custom Field would not be found
+                    // (also for example because its Name is misspelled in the backend)
                     $value = 'That Custom Field ' . $field->title . ' was not found';
             }
 
@@ -290,9 +296,7 @@ class PlgSystemupdatecf extends JPlugin
      */
     public function getOneField(array $array, string $field): string
     {
-        $result = $array[$field];
-
-        return $result;
+        return $array[$field] ?? '';
     }
 
     /**
@@ -328,7 +332,7 @@ class PlgSystemupdatecf extends JPlugin
     {
         $categories = $this->params->get('categories');
 
-        if (is_null($categories)) {
+        if (null === $categories) {
             $res        = $this->getAllCategories();
             $categories = [];
             foreach ($res as $catid) {
@@ -339,14 +343,13 @@ class PlgSystemupdatecf extends JPlugin
         }
 
         $joomlaVersion = new JVersion();
+        $majorVersion  = (int) substr($joomlaVersion->getShortVersion(), 0, 1);
 
-        $version=substr($joomlaVersion->getShortVersion(), 0, 1);
-
-        if ('4' == $version) {
+        if ($majorVersion >= self::JOOMLA_4) {
             $articles     = new ArticlesModel(['ignore_request' => true]);
-        } else { // Joomla 3.x
+        } else {
             JLoader::register('ContentModelArticles', JPATH_SITE . '/components/com_content/models/articles.php');
-            $articles     = JModelLegacy::getInstance('Articles', 'ContentModel', ['ignore_request' => true]);
+            $articles = JModelLegacy::getInstance('Articles', 'ContentModel', ['ignore_request' => true]);
         }
 
         if ($articles) {
@@ -360,15 +363,14 @@ class PlgSystemupdatecf extends JPlugin
             $articles->setState('list.direction', 'ASC');
             $articles->setState('filter.published', 1);
 
-            $catids = $categories;
+            $articles->setState('filter.category_id', $categories);
 
-            $articles->setState('filter.category_id', $catids);
             $articles->setState('filter.featured', 'show');
             $articles->setState('filter.author_id', '');
             $articles->setState('filter.author_id.include', 1);
             $articles->setState('filter.access', false);
 
-            $items             = $articles->getItems();
+            $items = $articles->getItems();
 
             foreach ($items as $item) {
                 $this->updateArticleCustomFields($item);
@@ -377,7 +379,7 @@ class PlgSystemupdatecf extends JPlugin
     }
 
     /**
-     * For each Article, decides whether to trigger or not the update of the Custom Field values
+     * For each Article, decides whether to trigger or not the update of the Custom Field values.
      *
      * @param stdClass $article Joomla article
      *
@@ -389,10 +391,12 @@ class PlgSystemupdatecf extends JPlugin
 
         $item       = [];
         $item['id'] = $article->id;
-        $fields     = FieldsHelper::getFields('com_content.article', $item);
-        $idExternalSource         = '';
 
-        $update     = false;
+        $fields = FieldsHelper::getFields('com_content.article', $item);
+
+        $idExternalSource = '';
+
+        $update = false;
 
         foreach ($fields as $field) {
             if (('cf-update' == $field->name) && ('yes' == $field->value)) {
@@ -400,26 +404,30 @@ class PlgSystemupdatecf extends JPlugin
             }
 
             if ('id-external-source' == $field->name) {
-                $idExternalSource = $field->value;
+                $idExternalSource = trim($field->value);
             }
         }
 
-        // We update a Article only if its Custom Field is set on Yes and if the ID of the External Source is filled in
+        // We update a Article only if its Custom Field is set on Yes and if the
+        // ID of the External Source is filled in
         if ($update && ('' != $idExternalSource)) {
             $this->url = self::DOMAIN . urlencode($idExternalSource);
             if (extension_loaded('curl')) {
                 $getContentCode = $this->getCurlContent($this->url);
                 if ((self::HTTP_OK != $getContentCode) and (self::HTTP_FOUND != $getContentCode)) {
-                    $getContentCode = $this->getHttpContent($this->url, $getContentCode);
+                    $getContentCode = (int) $this->getHttpContent($this->url, $getContentCode);
                 }
             }
 
             if (self::HTTP_OK == $getContentCode) {
                 $this->updateCustomFields($article->id, $fields);
             } else {
-                $msg = 'Error Custom field ' . $idExternalSource . ' not found';
                 if ('1' == $this->params->get('log')) {
-                    JLog::add($msg, JLog::INFO, 'MAJ CF');
+                    JLog::add(
+                        'Error Custom field ' . $idExternalSource . ' not found',
+                        JLog::INFO,
+                        'MAJ CF'
+                    );
                 }
 
                 return false;
@@ -430,7 +438,7 @@ class PlgSystemupdatecf extends JPlugin
     }
 
     /**
-     * Retrieving information
+     * Retrieving information.
      *
      * @param string $url URL
      *
@@ -453,7 +461,7 @@ class PlgSystemupdatecf extends JPlugin
 
         curl_close($curl);
 
-        return $infos['http_code'];
+        return (int) $infos['http_code'];
     }
 
     /**
@@ -462,12 +470,12 @@ class PlgSystemupdatecf extends JPlugin
      * @param string $url   The URL
      * @param string $infos Informations
      *
-     * @return void
+     * @return string
      */
-    private function getHttpContent(string $url, string $infos)
+    private function getHttpContent(string $url, string $infos): string
     {
         if ($this->response = @file_get_contents($url)) {
-            return self::HTTP_OK;
+            return (string) self::HTTP_OK;
         }
 
         return '2000' . ' ' . $infos;
@@ -480,7 +488,7 @@ class PlgSystemupdatecf extends JPlugin
      */
     public static function getAllCategories(): array
     {
-        $db    = JFactory::getDbo();
+        $db = JFactory::getDbo();
 
         $query = $db->getQuery(true);
 
