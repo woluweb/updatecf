@@ -56,4 +56,5 @@ The last field is created just to show that we have a default value (for example
 The plugin has several Options. You can indeed:
 - select the Categories for which the synchronisation will take place
 - select the frequency of the synchronization
-- enable/disable the Action Log (you can access the log file on /administrator/logs/updatecf.trace.log)
+- select the time at which the synchronization should trigger (in the TimeZone of the site. Note that the Log file is expressed in UTC)
+- enable/disable the Action Log (you can access the Log file on /administrator/logs/updatecf.trace.log)
