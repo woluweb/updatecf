@@ -42,12 +42,12 @@
 				/>
 				<field 
 				name="categories" type="category"	multiple="true"	extension="com_content" 
-				label="Category(ies)" description="Select the category or categories you want to check or update." 
+				label="Categories" description="Select the category or categories you want to synchronize." 
 				/>
 				<field name="log" type="radio"
 				default="0"
 				label="Action log"
-				description="Do you want to keep track of the plugin? If so, an updatecf.trace.log file will be created in the logs directory." 
+				description="Do you want to keep track of the plugin? If so, an updatecf.trace.log file will be created in the /administrator/logs/ directory." 
 				class="btn-group btn-group-yesno">
 					<option value="1">JYES</option>
 					<option value="0">JNO</option>
