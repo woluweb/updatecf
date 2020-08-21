@@ -10,10 +10,9 @@ Please go <https://sync.joomlacustomfields.org/fr/> for more explanations and fo
 
 In this plugin, we retrieve information from <https://social.brussels>, which is a Directory of social organizations in Brussels.
 
-Example of page for a given organization:
-<https://social.brussels/organisation/470>
-Corresponding page in json format (which will then be used to synchronize our Custom Field values):
-<https://social.brussels/rest/organisation/470>
+Example of page for a given organization: <https://social.brussels/organisation/470>
+
+Corresponding page in json format (which will then be used to synchronize our Custom Field values): <https://social.brussels/rest/organisation/470>
 
 Therefore, some things (like the Fields we want to retrieve and synchronize) are _hardcoded_ in the plugin.
 But you can easily adapt the code to your needs according to your Source
@@ -35,7 +34,7 @@ The first two Custom Fields are
   - of Type 'Text'
   - with Name 'id-external-source'
 
-The plugin will indeed trigger for a given article _only if_ 'cf-update' is set on 'yes' and if the 'id-external-site' is filled in
+The plugin will indeed trigger for a given article _only if_ 'cf-update' is set on 'yes' and if the 'id-external-site' is filled in.
 
 Then we also create a number of other Custom Fields, based on the Fields we want to retrieve from the json of the External Source.
 See the code of the plugin to see the Name of the chosen Fields, namely:
