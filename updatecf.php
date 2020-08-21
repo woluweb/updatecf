@@ -175,7 +175,7 @@ class PlgSystemupdatecf extends JPlugin
 
             // there is an Option allowing to have a Log everytime the Plugin is triggered
             if (1 === (int) $this->params->get('log')) {
-                JLog::addLogger(['text_file' => 'updatecf.trace.log'], JLog::INFO);
+                JLog::addLogger(['text_file' => 'updatecf.trace.log.php'], JLog::INFO);
             }
 
             $this->goUpdate();
@@ -201,7 +201,7 @@ class PlgSystemupdatecf extends JPlugin
 
         foreach ($fields as $field) {
             // we mention here all the Custom Fields which should be ignored by the plugin
-            if (('id-external-source' == $field->name) || ('cf-update' == $field->name)) {
+            if (('id-external-source' === $field->name) || ('cf-update' === $field->name)) {
                 continue;
             }
 
@@ -399,11 +399,11 @@ class PlgSystemupdatecf extends JPlugin
         $update = false;
 
         foreach ($fields as $field) {
-            if (('cf-update' == $field->name) && ('yes' == $field->value)) {
+            if (('cf-update' === $field->name) && ('yes' === $field->value)) {
                 $update = true;
             }
 
-            if ('id-external-source' == $field->name) {
+            if ('id-external-source' === $field->name) {
                 $idExternalSource = trim($field->value);
             }
         }
@@ -422,7 +422,7 @@ class PlgSystemupdatecf extends JPlugin
             if (self::HTTP_OK == $getContentCode) {
                 $this->updateCustomFields($article->id, $fields);
             } else {
-                if ('1' == $this->params->get('log')) {
+                if (1 === (int) $this->params->get('log')) {
                     JLog::add(
                         'Error Custom field ' . $idExternalSource . ' not found',
                         JLog::INFO,
@@ -496,7 +496,7 @@ class PlgSystemupdatecf extends JPlugin
             ->from('#__categories as cat ')
             ->join('left', '#__content cont on cat.id = cont.catid')
             ->where('(extension like "com_content") AND (cat.published = 1) AND (cat.access = 1) AND (cont.state = 1)')
-            ->group('catid');
+            ->group('cont.catid');
 
         $db->setQuery($query);
 
