@@ -137,7 +137,7 @@ class PlgSystemupdatecf extends JPlugin
     public function onAfterInitialise()
     {
         $folder  = JPATH_SITE . '/plugins/system/updatecf';
-        $chkfile = 'majcf_checkfile';
+        $chkfile = 'updatecf_checkfile';
         $fnames  =(array) JFolder::files($folder, $chkfile . '.*');
 
         if ([] === $fnames) {
