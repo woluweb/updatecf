@@ -6,6 +6,8 @@ A plugin allowing to populate Joomla Custom Fields from Web Services
 
 ## Preamble
 
+Please go <https://sync.joomlacustomfields.org/fr/> for more explanations and for a demo.
+
 In this plugin, we retrieve information from <https://social.brussels>, which is a Directory of social organizations in Brussels.
 
 Example of page for a given organization:
@@ -50,6 +52,8 @@ See the code of the plugin to see the Name of the chosen Fields, namely:
 - fake-field
 
 The last field is created just to show that we have a default value (for example in case we make a spelling mistake in the Name of some Custom Field).
+
+Joomla natively supports multilangual websites. So we assign the corresponding language (FR / NL) to each Custom Field, meaning that they will appear in the front-end in function of the selected language on the website.
 
 ## Options
 
