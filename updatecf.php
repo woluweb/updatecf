@@ -20,70 +20,8 @@
 defined('_JEXEC') or die('Restricted access');
 
 use Joomla\CMS\Factory;
-use Joomla\CMS\MVC\Model\BaseDatabaseModel;
 use Joomla\Registry\Registry;
-
-// 4.0. compatibility
-
-jimport('joomla.filesystem.folder');
-jimport('joomla.filesystem.file');
-
-$input  = Factory::getApplication()->input;
-$pJform = $input->get('jform', '', 'array');
-
-/*
- * The present plugin will trigger automatically at the frequency configured in the Plugin Options
- * To do so it creates a file with the timestamp of the last execution
- * Note : the manual way to trigger the Plugin is simply to (Open and) Save it
- */
-if (isset($pJform['params']['freq'])) {
-    $folder  = JPATH_SITE . '/plugins/system/updatecf';
-    $chkfile = 'updatecf_checkfile';
-    $fnames  =(JFolder::files($folder, $chkfile . '.*'));
-    $fname   =array_pop($fnames);
-    if ($fname) {
-        unlink($folder . '/' . $fname);
-    }
-
-    $dayssecs=$pJform['params']['time'];
-    $dayssecs=strtotime(date('Y-m-d') . ' ' . $dayssecs);
-    if (!$dayssecs) {
-        $dayssecs=0;
-    } else {
-        $dayssecs -= strtotime(date('Y-m-d'));
-    }
-
-    $time      =time();
-    $round     =strtotime(date('Y-m-d', $time));
-    $backuptime=$round + $dayssecs;
-    $xdays     =(int)$pJform['params']['xdays'];
-    if ($xdays < 0) {
-        $xdays=1;
-    }
-
-    if (1 == $xdays) {
-        $interval=(int)$pJform['params']['freq'];
-        $interval= (0 == $interval) ? 86400 : (86400 / $interval);
-
-        while ($backuptime < $time) {
-            $backuptime += $interval;
-        }
-    } else {
-        $interval=$xdays * 86400;
-        if ($backuptime < $time) {
-            $backuptime += 86400;
-        }
-    }
-
-    $fname=$folder . '/' . $chkfile . '.' . $backuptime;
-    if (!touch($fname)) {
-        return;
-    }
-
-    $f=fopen($fname, 'w');
-    fputs($f, 'w' . $interval);
-    fclose($f);
-}
+use Joomla\CMS\MVC\Model\BaseDatabaseModel;
 
 /**
  * The Update Custom Fields system plugin.
@@ -123,6 +61,28 @@ class PlgSystemupdatecf extends JPlugin
     private const JOOMLA_4 = 4;
 
     /**
+     * Name of last run file; stored in the parent folder of the plugin.
+     *
+     * @var string
+     */
+    private const FILENAME = 'updatecf_checkfile';
+
+    /**
+     * Remember the folder of this plugin
+     * For instance "/home/user/site/plugins/system/updatecf/".
+     *
+     * @var string
+     */
+    private $folder = '';
+
+    /**
+     * List of "updatecf_checkfile" files found in the current folder.
+     *
+     * @var array<string>
+     */
+    private $fnames = [];
+
+    /**
      * HTTP response.
      *
      * @var string
@@ -130,48 +90,71 @@ class PlgSystemupdatecf extends JPlugin
     private $response;
 
     /**
+     * Plugin constructor.
+     *
+     * @param [type] $subject
+     * @param array  $config  Configuration items of the plugin
+     */
+    public function __construct(&$subject, $config = [])
+    {
+        // 4.0. compatibility
+        jimport('joomla.filesystem.folder');
+        jimport('joomla.filesystem.file');
+
+        parent::__construct($subject, $config);
+
+        // Folder of this plugin
+        $this->folder  = dirname(__FILE__) . DIRECTORY_SEPARATOR;
+
+        // Get the list of existing "updatecf_checkfile" files in the current folder
+        $this->fnames  = (array) JFolder::files($this->folder, self::FILENAME . '.*');
+    }
+
+    /**
      * Joomla onAfterInitialise.
      *
      * @return void
      */
-    public function onAfterInitialise()
+    public function onAfterInitialise(): void
     {
-        $folder  = JPATH_SITE . '/plugins/system/updatecf';
-        $chkfile = 'updatecf_checkfile';
-        $fnames  =(array) JFolder::files($folder, $chkfile . '.*');
+        $input = Factory::getApplication()->input;
 
-        if ([] === $fnames) {
+        // Get an empty string when the plugin wasn't called from the Edit plugin backend page
+        $pJform = $input->get('jform', '', 'array');
+
+        if ('' != $pJform) {
+            // Plugin called from the Edit plugin page, run the "manual" synchronization
+            if ('updatecf' === $pJform['element']) {
+                $this->manualPluginSaving($pJform);
+            }
+        }
+
+        if ([] === $this->fnames) {
             return;
         }
 
-        $fname     =(string) array_pop($fnames);
-        $backuptime=substr($fname, -10, 10);
-        $interval  =file_get_contents($folder . '/' . $fname);
+        $fname      = (string) array_pop($this->fnames);
+        $backuptime = substr($fname, -10, 10);
+        $interval   = file_get_contents($this->folder . $fname);
 
-        $create  =false;
+        $create  = false;
 
         if ('w' == $interval[0]) {
-            $interval=(int)substr($interval, 1);
-            $create  =true;
+            $interval = (int) substr($interval, 1);
+            $create   = true;
         }
 
-        $time=time();
+        $time = time();
 
         // Update
         if (($time > $backuptime) || $create) {
-            unlink($folder . '/' . $fname);
+            $this->killFile($fname);
+
             while ($backuptime < $time) {
                 $backuptime += $interval;
             }
 
-            $fname=$folder . '/' . $chkfile . '.' . $backuptime;
-            if (!touch($fname)) {
-                return;
-            }
-
-            $f=fopen($fname, 'w');
-            fputs($f, $interval);
-            fclose($f);
+            $this->createLastRun(self::FILENAME . '.' . $backuptime, $interval);
 
             // there is an Option allowing to have a Log everytime the Plugin is triggered
             if (1 === (int) $this->params->get('log')) {
@@ -179,6 +162,7 @@ class PlgSystemupdatecf extends JPlugin
             }
 
             $this->goUpdate();
+
             if (1 === (int) $this->params->get('log')) {
                 JLog::add('OK', JLog::INFO, 'Custom Fields Synchronisation');
             }
@@ -324,11 +308,119 @@ class PlgSystemupdatecf extends JPlugin
     }
 
     /**
-     * Make the update.
+     * The present plugin will trigger automatically at the frequency configured
+     * in the Plugin Options.
+     *
+     * To do so it creates a file with the timestamp of the last execution
+     * Note: the manual way to trigger the Plugin is simply to (Open and) Save it
+     *
+     * @param array $config Configuration items of the plugin
      *
      * @return void
      */
-    private function goUpdate()
+    private function manualPluginSaving(array $config): void
+    {
+        if (!(isset($config['params']['freq']))) {
+            return;
+        }
+
+        JLog::add('OK', JLog::INFO, 'Plugin has been edited and saved');
+
+        $interval = (int) $config['params']['freq'];
+
+        if ([] !== $this->fnames) {
+            $fname = array_pop($this->fnames);
+            $this->killFile($fname);
+        }
+
+        $dayssecs = $config['params']['time'];
+        $dayssecs = strtotime(date('Y-m-d') . ' ' . $dayssecs);
+
+        if (!$dayssecs) {
+            $dayssecs=0;
+        } else {
+            $dayssecs -= strtotime(date('Y-m-d'));
+        }
+
+        $time       = time();
+        $round      = strtotime(date('Y-m-d', $time));
+        $backuptime = $round + $dayssecs;
+        $xdays      = (int)$config['params']['xdays'];
+
+        if ($xdays < 0) {
+            $xdays = 1;
+        }
+
+        if (1 == $xdays) {
+            $interval= (0 == $interval) ? 86400 : (86400 / $interval);
+
+            while ($backuptime < $time) {
+                $backuptime += $interval;
+            }
+        } else {
+            $interval = $xdays * 86400;
+            if ($backuptime < $time) {
+                $backuptime += 86400;
+            }
+        }
+
+        $this->createLastRun(self::FILENAME . '.' . $backuptime, 'w' . $interval);
+    }
+
+    /**
+     * Safely kill a file.
+     *
+     * @param string $path Basename of the file (no path)
+     *
+     * @return void
+     */
+    private function killFile(string $path): void
+    {
+        if ('' === $path) {
+            return;
+        }
+
+        if (is_file($path)) {
+            try {
+                unlink($path);
+            } catch (\Exception $e) {
+                JLog::add('ERROR', JLog::ERROR, $e->getMessage());
+            }
+        }
+    }
+
+    /**
+     * Create the last run file.
+     *
+     * @param string $path    Basename of the file (no path)
+     * @param string $content The content to write in the file
+     *
+     * @return void
+     */
+    private function createLastRun(string $path, string $content): void
+    {
+        if ('' === $path) {
+            return;
+        }
+
+        $path = $this->folder . JFile::makeSafe($path);
+
+        try {
+            // Create the last run file
+            $fileLastRun=fopen($path, 'w');
+            fputs($fileLastRun, $content);
+            fclose($fileLastRun);
+        } catch (\Exception $e) {
+            JLog::add('ERROR', JLog::ERROR, $e->getMessage());
+        }
+    }
+
+    /**
+     * Make the update, process articles.
+     *
+     * @return void
+     */
+    private function goUpdate(): void
     {
         $categories = $this->params->get('categories');
 
@@ -372,6 +464,7 @@ class PlgSystemupdatecf extends JPlugin
 
             $items = $articles->getItems();
 
+            // Process all articles
             foreach ($items as $item) {
                 $this->updateArticleCustomFields($item);
             }
@@ -411,15 +504,13 @@ class PlgSystemupdatecf extends JPlugin
         // We update a Article only if its Custom Field is set on Yes and if the
         // ID of the External Source is filled in
         if ($update && ('' != $idExternalSource)) {
+            // Query f.i. https://social.brussels/rest/organisation/13219
             $this->url = self::DOMAIN . urlencode($idExternalSource);
-            if (extension_loaded('curl')) {
-                $getContentCode = $this->getCurlContent($this->url);
-                if ((self::HTTP_OK != $getContentCode) and (self::HTTP_FOUND != $getContentCode)) {
-                    $getContentCode = (int) $this->getHttpContent($this->url, $getContentCode);
-                }
-            }
 
-            if (self::HTTP_OK == $getContentCode) {
+            $getContentCode = $this->getCurlContent($this->url);
+
+            if (in_array($getContentCode, [self::HTTP_OK, self::HTTP_FOUND])) {
+                // Updating custom fields in the article
                 $this->updateCustomFields($article->id, $fields);
             } else {
                 if (1 === (int) $this->params->get('log')) {
@@ -438,14 +529,18 @@ class PlgSystemupdatecf extends JPlugin
     }
 
     /**
-     * Retrieving information.
+     * Retrieving information thanks to curl.
      *
-     * @param string $url URL
+     * @param string $url URL to query
      *
-     * @return int The HTTP code
+     * @return int The HTTP code or 0 when curl isn't loaded
      */
-    private function getCurlContent($url): int
+    private function getCurlContent(string $url): int
     {
+        if (!extension_loaded('curl')) {
+            return 0;
+        }
+
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_TIMEOUT, 10);
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
@@ -462,23 +557,6 @@ class PlgSystemupdatecf extends JPlugin
         curl_close($curl);
 
         return (int) $infos['http_code'];
-    }
-
-    /**
-     * HTTP return recovery (self::HTTP_OK = OK).
-     *
-     * @param string $url   The URL
-     * @param string $infos Informations
-     *
-     * @return string
-     */
-    private function getHttpContent(string $url, string $infos): string
-    {
-        if ($this->response = @file_get_contents($url)) {
-            return (string) self::HTTP_OK;
-        }
-
-        return '2000' . ' ' . $infos;
     }
 
     /**
