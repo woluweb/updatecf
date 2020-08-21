@@ -38,7 +38,7 @@ $pJform = $input->get('jform', '', 'array');
  */
 if (isset($pJform['params']['freq'])) {
     $folder  = JPATH_SITE . '/plugins/system/updatecf';
-    $chkfile = 'majcf_checkfile';
+    $chkfile = 'updatecf_checkfile';
     $fnames  =(JFolder::files($folder, $chkfile . '.*'));
     $fname   =array_pop($fnames);
     if ($fname) {
