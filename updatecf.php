@@ -180,7 +180,7 @@ class PlgSystemupdatecf extends JPlugin
 
             $this->goUpdate();
             if (1 === (int) $this->params->get('log')) {
-                JLog::add('OK', JLog::INFO, 'Custom Fields updated');
+                JLog::add('OK', JLog::INFO, 'Custom Fields Synchronisation');
             }
         }
     }
@@ -426,7 +426,7 @@ class PlgSystemupdatecf extends JPlugin
                     JLog::add(
                         'Error Custom field ' . $idExternalSource . ' not found',
                         JLog::INFO,
-                        'MAJ CF'
+                        'Custom Fields Synchronisation'
                     );
                 }
 
