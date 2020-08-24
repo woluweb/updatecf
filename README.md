@@ -1,3 +1,5 @@
+![](https://img.shields.io/static/v1?label=Joomla&message=3.X&style=flat&logo=joomla&logoColor=orange&color=blue)
+
 # Update Custom Fields
 
 ![Banner](./banner.svg)
