@@ -14,7 +14,7 @@ In this plugin, we retrieve information from <https://social.brussels>, which is
 
 Example of page for a given organization: <https://social.brussels/organisation/470>
 
-Corresponding page in json format (which will then be used to synchronize our Custom Field values): <https://social.brussels/rest/organisation/470>
+Corresponding page in JSON-format (which will then be used to synchronize our Custom Field values): <https://social.brussels/rest/organisation/470>
 
 Therefore, some things (like the Fields we want to retrieve and synchronize) are _hardcoded_ in the plugin.
 But you can easily adapt the code to your needs according to your Source
